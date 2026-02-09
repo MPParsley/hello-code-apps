@@ -38,7 +38,6 @@ jobs:
         run: |
           pac auth create \
             --name GithubActions \
-            --kind DEVICECODE \
             --cloud Public \
             --tenant ${{ secrets.TENANT_ID }} \
             --applicationId ${{ secrets.CLIENT_ID }} \
