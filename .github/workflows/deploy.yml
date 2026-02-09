@@ -1,0 +1,58 @@
+name: Deploy Power Apps Code App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install Power Platform CLI
+        run: dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+
+      - name: Authenticate to Power Platform
+        run: |
+          pac auth create \
+            --name GithubActions \
+            --kind DEVICECODE \
+            --cloud Public \
+            --tenant ${{ secrets.TENANT_ID }} \
+            --applicationId ${{ secrets.CLIENT_ID }} \
+            --clientSecret ${{ secrets.CLIENT_SECRET }}
+
+      - name: Select Environment
+        run: pac env select --environment ${{ secrets.ENVIRONMENT_ID }}
+
+      - name: Deploy Code App
+        run: pac code push
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-output
+          path: dist/
